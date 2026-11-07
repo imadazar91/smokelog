@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SmokeLog">
+<meta name="theme-color" content="#0e0f12">
+<link rel="apple-touch-icon" id="icon" href="">
+<title>SmokeLog</title>
+<style>
+:root{--bg:#0e0f12;--card:#181a20;--card2:#1f222a;--tx:#eceef2;--mu:#8a90a0;--ok:#5ee0a0;--warn:#f2b84b;--bad:#ff6b6b;--line:#2a2d36}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+body{padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 84px)}
+h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:22px 0 8px;font-weight:600}
+.card{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.hero{display:flex;align-items:flex-end;justify-content:space-between}
+.big{font-size:56px;font-weight:700;line-height:1}
+.big small{font-size:22px;color:var(--mu);font-weight:500}
+.mu{color:var(--mu);font-size:14px}
+.bar{height:8px;border-radius:4px;background:var(--card2);margin-top:12px;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:4px;background:var(--ok);transition:width .3s}
+.bar.warn>i{background:var(--warn)}.bar.bad>i{background:var(--bad)}
+.track{position:relative;height:52px;border-radius:14px;background:var(--card);margin-bottom:8px;overflow:hidden;--p:0}
+.track .fill{position:absolute;inset:0 auto 0 0;width:calc(var(--p)*100%);background:rgba(94,224,160,.25)}
+.track .tl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:600;opacity:calc(1 - var(--p)*1.4);padding:0 56px;text-align:center}
+.thumb{position:absolute;left:4px;top:4px;width:44px;height:44px;border-radius:11px;background:var(--ok);color:#06210f;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;touch-action:none;cursor:grab}
+.row{display:flex;align-items:center;gap:12px;height:52px;border-radius:14px;background:var(--card);margin-bottom:8px;padding:0 16px;opacity:.6}
+.row .chk{color:var(--ok);font-weight:700}.row .rl{flex:1;text-decoration:line-through;text-decoration-color:var(--mu)}.row .rt{color:var(--mu);font-variant-numeric:tabular-nums}
+.btn{display:block;width:100%;padding:14px;border:0;border-radius:14px;background:var(--card2);color:var(--tx);font:600 16px inherit;font-family:inherit;margin-top:8px}
+.btn.danger{color:var(--bad)}
+.un{display:flex;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--line);color:var(--warn)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(24,26,32,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);border-top:1px solid var(--line)}
+nav button{flex:1;background:none;border:0;color:var(--mu);font:600 11px inherit;font-family:inherit;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button b{font-size:20px;font-weight:400}
+nav button.on{color:var(--ok)}
+.btn:disabled{opacity:.3}
+.chip{display:inline-block;background:var(--card2);border-radius:8px;padding:3px 9px;margin:2px 4px 2px 0;font-size:13px}
+.card details{background:var(--card2)}
+nav button{font-size:10px}
+.cs{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:14px;align-items:flex-end}
+.cg{display:block}
+.track .ci{position:absolute;right:12px;top:50%;transform:translateY(-75%);pointer-events:none;opacity:calc(1 - var(--p)*1.2)}
+.row .chk .cg{margin-top:-9px}
+.row .chk{display:flex;align-items:center}
+.track .tl{justify-content:flex-start;padding:0 84px 0 60px;text-align:left}
+.chart{display:flex;align-items:flex-end;gap:3px;height:110px;position:relative;margin-top:8px}
+.chart .c{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.chart .c i{display:block;width:100%;border-radius:3px 3px 0 0;background:var(--ok);min-height:2px}
+.chart .c i.over{background:var(--bad)}
+.chart .tgt{position:absolute;left:0;right:0;border-top:1px dashed var(--mu);pointer-events:none}
+.xl{display:flex;gap:3px;margin-top:4px}.xl span{flex:1;text-align:center;font-size:10px;color:var(--mu)}
+.seg{display:flex;background:var(--card);border-radius:12px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;color:var(--mu);padding:8px;border-radius:9px;font:600 14px inherit;font-family:inherit}
+.seg button.on{background:var(--card2);color:var(--tx)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-size:26px}.stat span{color:var(--mu);font-size:13px}
+.up{color:var(--bad)}.down{color:var(--ok)}
+.hb{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:14px}
+.hb .n{width:44%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.hb .b{flex:1;height:8px;background:var(--card2);border-radius:4px;overflow:hidden}.hb .b i{display:block;height:100%;background:var(--ok)}.hb .v{width:40px;text-align:right;color:var(--mu)}
+details{background:var(--card);border-radius:12px;margin-bottom:6px;padding:0 14px}
+summary{list-style:none;display:flex;justify-content:space-between;padding:12px 0;font-weight:600}
+summary::-webkit-details-marker{display:none}
+details .e{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);font-size:14px;color:var(--mu)}
+details .e:last-child{margin-bottom:8px}
+input[type=text],select{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;color:var(--tx);font:16px inherit;font-family:inherit;padding:10px 12px;margin-bottom:8px;-webkit-user-select:text;user-select:text}
+label.f{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0}
+label.f select{width:120px;margin:0}
+.note{font-size:13px;color:var(--mu);margin:6px 2px 14px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav id="nav"></nav>
+<script id="seed" type="application/json">null</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const KEY='smokelog.v1';
+const DEFLABELS=['Morning coffee','Commute','Mid-morning break','Post lunch','Afternoon coffee','Work break','Commute home','Post dinner','Evening','Before bed'];
+
+function norm(o){
+  o=o||{};
+  const okL=a=>Array.isArray(a)&&a.length===10;
+  let tpls=Array.isArray(o.templates)?o.templates.filter(t=>t&&okL(t.labels)).map(t=>({id:String(t.id),name:String(t.name||'Template'),labels:t.labels.map(String)})):[];
+  if(!tpls.length)tpls=[{id:'t1',name:'Default',labels:okL(o.labels)?o.labels.map(String):DEFLABELS.slice()}];
+  const ids=tpls.map(t=>t.id);
+  const plans={};
+  if(o.plans&&typeof o.plans==='object')for(const k in o.plans)if(okL(o.plans[k]))plans[k]=o.plans[k].map(String);
+  return {
+    templates:tpls,
+    defTpl:ids.includes(o.defTpl)?o.defTpl:ids[0],
+    wd:Array.from({length:7},(_,i)=>o.wd&&ids.includes(o.wd[i])?o.wd[i]:null),
+    plans,
+    dayStart:Number.isInteger(o.dayStart)&&o.dayStart>=0&&o.dayStart<=8?o.dayStart:4,
+    target:Number.isInteger(o.target)&&o.target>=1&&o.target<=10?o.target:10,
+    log:Array.isArray(o.log)?o.log.filter(e=>e&&typeof e.t==='number'&&Number.isInteger(e.s)&&e.s>=-1&&e.s<10).map(e=>({id:String(e.id||Math.random().toString(36).slice(2)),t:e.t,s:e.s,l:typeof e.l==='string'?e.l:undefined})):[]
+  };
+}
+function load(){
+  try{const r=localStorage.getItem(KEY);if(r)return norm(JSON.parse(r));}catch(e){}
+  try{const sd=JSON.parse($('#seed').textContent.trim());if(sd)return norm(sd);}catch(e){}
+  return norm({});
+}
+let S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+save();
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
+
+/* ---------- day helpers ---------- */
+const fmtKey=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const dk=t=>fmtKey(new Date(t-S.dayStart*36e5));
+const addDays=(k,n)=>{const [y,m,d]=k.split('-').map(Number);return fmtKey(new Date(y,m-1,d+n,12));};
+const keyDate=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d,12);};
+const fmtTime=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+const fmtMin=m=>{m=Math.round(m);const h=Math.floor(m/60);return h?h+'h '+pad(m%60)+'m':m+'m';};
+const clock=m=>{m=Math.round(m)%1440;return pad(Math.floor(m/60))+':'+pad(m%60);};
+function groups(){
+  const m={};
+  for(const e of S.log)(m[dk(e.t)]=m[dk(e.t)]||[]).push(e);
+  for(const k in m)m[k].sort((a,b)=>a.t-b.t);
+  return m;
+}
+function firstKey(g){const ks=Object.keys(g).sort();return ks[0]||dk(Date.now());}
+function daysBack(n,offset,first){
+  const out=[];let k=addDays(dk(Date.now()),-offset);
+  for(let i=0;i<n;i++){if(k<first)break;out.push(k);k=addDays(k,-1);}
+  return out;
+}
+
+/* ---------- plans & templates ---------- */
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+function tplFor(k){
+  const id=S.wd[keyDate(k).getDay()]||S.defTpl;
+  return S.templates.find(t=>t.id===id)||S.templates[0];
+}
+function labelsFor(k){return S.plans[k]?S.plans[k].slice():tplFor(k).labels.slice();}
+function entryLabel(e){
+  if(e.s<0)return 'Unplanned';
+  return (e.l!==undefined?e.l:(labelsFor(dk(e.t))[e.s]||'')).trim();
+}
+
+/* ---------- actions ---------- */
+function addEntry(s){
+  const key=dk(Date.now());
+  if(s>=0&&(groups()[key]||[]).some(e=>e.s===s))return;
+  if(!S.plans[key])S.plans[key]=labelsFor(key);
+  S.log.push({id:uid(),t:Date.now(),s,l:s>=0?S.plans[key][s]:undefined});
+  save();render();
+}
+function removeEntry(id){S.log=S.log.filter(e=>e.id!==id);save();render();}
+
+/* ---------- views ---------- */
+let tab='today',period=7;
+
+function cig(smoked,w,unp){
+  const f=unp?'#ff6b6b':'#e0a458',fd=unp?'#c94a4a':'#c88a3c';
+  const filter=`<rect x="1" y="-1" width="17" height="10" rx="2.5" fill="${f}"/><rect x="5" y="-1" width="1.4" height="10" fill="${fd}"/><rect x="9" y="-1" width="1.4" height="10" fill="${fd}"/><rect x="13" y="-1" width="1.4" height="10" fill="${fd}"/>`;
+  const body=smoked
+    ? `<rect x="18" y="-1" width="9" height="10" fill="#f1efe8"/><rect x="27" y="-1" width="4" height="10" fill="#2e2e33"/><path d="M31 -1 L40 0 L38 3 L41 5 L38 8 L40 9 L31 9Z" fill="#9aa0a6"/><path d="M38 -3 C34 -8 42 -10 38 -15 M44 -4 C41 -8 47 -11 44 -16" fill="none" stroke="#8a90a0" stroke-width="1.4" stroke-linecap="round" opacity=".7"/>`
+    : `<rect x="18" y="-1" width="44" height="10" rx="2.5" fill="#f1efe8"/><rect x="18" y="-1" width="1.4" height="10" fill="#d9d5c8"/><rect x="58" y="-1" width="1.2" height="10" fill="#d9d5c8"/>`;
+  return `<svg class="cg" viewBox="0 -17 64 28" width="${w}" height="${Math.round(w*28/64)}" aria-hidden="true">${filter}${body}</svg>`;
+}
+
+function viewToday(){
+  const key=dk(Date.now()),g=groups(),es=g[key]||[],done={},L=labelsFor(key);
+  es.forEach(e=>{if(e.s>=0)done[e.s]=e;});
+  const n=es.length,un=es.filter(e=>e.s<0),T=S.target;
+  const next=L.findIndex((l,i)=>l.trim()&&!done[i]);
+  const cls=n>T?'bad':n===T?'warn':'';
+  let h=`<div class="card"><div class="hero"><div class="big">${n}<small> / ${T}</small></div><div class="mu" style="text-align:right"><div id="since"></div>${next>=0?'Next: '+esc(L[next]):'All planned slots used'}</div></div>
+  <div class="bar ${cls}"><i style="width:${Math.min(100,n/T*100)}%"></i></div>
+  <div class="cs">${L.map((l,i)=>done[i]?cig(true,34):(l.trim()?cig(false,34):'')).join('')}${un.map(()=>cig(true,34,true)).join('')}</div>
+  <div class="mu" style="margin-top:8px">${n-un.length} planned · ${un.length} unplanned · plan: ${esc(S.plans[key]?'custom':tplFor(key).name)}</div></div>`;
+  L.forEach((l,i)=>{
+    const d=done[i];
+    if(d)h+=`<div class="row" data-undo="${d.id}"><span class="chk">${cig(true,40)}</span><span class="rl">${esc(d.l!==undefined?d.l:l)}</span><span class="rt">${fmtTime(d.t)}</span></div>`;
+    else if(l.trim())h+=`<div class="track" data-i="${i}"><div class="fill"></div><span class="tl">${esc(l)}</span><span class="ci">${cig(false,64)}</span><div class="thumb">›</div></div>`;
+  });
+  h+=`<button class="btn" id="unp">+ Unplanned cigarette</button><button class="btn" data-plan="0">✎ Plan today / upcoming days</button>`;
+  if(un.length){h+=`<h2>Unplanned today</h2><div class="card">`+un.map(e=>`<div class="un" data-undo="${e.id}"><span>Unplanned</span><span>${fmtTime(e.t)}</span></div>`).join('')+`</div>`;}
+  return h;
+}
+
+function bars(vals,labels,over){
+  const mx=Math.max(1,...vals,over||0);
+  return `<div class="chart">${over?`<div class="tgt" style="bottom:${over/mx*100}%"></div>`:''}`+
+    vals.map(v=>`<div class="c"><i class="${over&&v>over?'over':''}" style="height:${v/mx*100}%"></i></div>`).join('')+
+    `</div><div class="xl">${labels.map(l=>`<span>${l}</span>`).join('')}</div>`;
+}
+
+function viewHistory(){
+  const g=groups(),first=firstKey(g);
+  const d14=daysBack(14,0,first).reverse();
+  const wd=['S','M','T','W','T','F','S'];
+  let h=`<h2>Last 14 days</h2><div class="card">`+
+    bars(d14.map(k=>(g[k]||[]).length),d14.map(k=>wd[keyDate(k).getDay()]),S.target)+
+    `<div class="mu" style="margin-top:8px">Dashed line = daily target (${S.target})</div></div><h2>Days</h2>`;
+  const all=daysBack(120,0,first);
+  all.forEach(k=>{
+    const es=g[k]||[],u=es.filter(e=>e.s<0).length;
+    const d=keyDate(k);
+    h+=`<details><summary><span>${d.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'})}</span><span style="color:${es.length>S.target?'var(--bad)':'var(--ok)'}">${es.length}${u?` <span class="mu">(${u} unpl.)</span>`:''}</span></summary>`+
+      (es.length?es.map(e=>`<div class="e"><span>${esc(entryLabel(e))||'(blank)'}</span><span>${fmtTime(e.t)}</span></div>`).join(''):`<div class="e"><span>None</span><span></span></div>`)+`</details>`;
+  });
+  h+=`<div class="note">Days with no entries count as zero cigarettes (since your first log).</div>`;
+  return h;
+}
+
+function viewStats(){
+  const g=groups(),first=firstKey(g);
+  const N=period==='all'?9999:period;
+  const days=daysBack(N,0,first);
+  const cnt=k=>(g[k]||[]).length;
+  const counts=days.map(cnt),sum=counts.reduce((a,b)=>a+b,0);
+  const avg=days.length?sum/days.length:0;
+  let delta='';
+  if(period!=='all'){
+    const prev=daysBack(N,N,first);
+    if(prev.length){
+      const pa=prev.map(cnt).reduce((a,b)=>a+b,0)/prev.length;
+      const diff=avg-pa;
+      delta=`<span class="${diff>0?'up':'down'}">${diff>0?'▲':'▼'} ${Math.abs(diff).toFixed(1)} vs previous ${N} days</span>`;
+    }
+  }
+  const within=counts.filter(c=>c<=S.target).length;
+  let streak=0;{let k=addDays(dk(Date.now()),-1);while(k>=first&&cnt(k)<=S.target){streak++;k=addDays(k,-1);}}
+  const best=counts.length?Math.min(...counts):0,worst=counts.length?Math.max(...counts):0;
+  // gaps, first/last
+  let gaps=[],firsts=[],lasts=[];
+  const shift=m=>m;
+  days.forEach(k=>{
+    const es=g[k]||[];
+    for(let i=1;i<es.length;i++)gaps.push((es[i].t-es[i-1].t)/6e4);
+    if(es.length){
+      const f=new Date(es[0].t-S.dayStart*36e5),l=new Date(es[es.length-1].t-S.dayStart*36e5);
+      firsts.push(f.getHours()*60+f.getMinutes());lasts.push(l.getHours()*60+l.getMinutes());
+    }
+  });
+  const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+  const off=S.dayStart*60;
+  // hour histogram
+  const hrs=new Array(24).fill(0);let tot=0,unp=0;
+  days.forEach(k=>(g[k]||[]).forEach(e=>{hrs[new Date(e.t).getHours()]++;tot++;if(e.s<0)unp++;}));
+  // weekday avg
+  const wdS=new Array(7).fill(0),wdN=new Array(7).fill(0);
+  days.forEach(k=>{const w=keyDate(k).getDay();wdS[w]+=cnt(k);wdN[w]++;});
+  const wdA=wdS.map((s,i)=>wdN[i]?+(s/wdN[i]).toFixed(1):0);
+  const order=[1,2,3,4,5,6,0],wl=['M','T','W','T','F','S','S'];
+  // per slot
+  const lab=new Map();
+  days.forEach(k=>{
+    const seen=new Set();
+    labelsFor(k).forEach(l=>{const t=l.trim();if(!t)return;const q=t.toLowerCase();if(seen.has(q))return;seen.add(q);if(!lab.has(q))lab.set(q,{n:t,p:0,s:0});lab.get(q).p++;});
+    const sm=new Set();
+    (g[k]||[]).forEach(e=>{if(e.s<0)return;const t=entryLabel(e);if(!t)return;const q=t.toLowerCase();if(sm.has(q))return;sm.add(q);if(!lab.has(q))lab.set(q,{n:t,p:0,s:0});lab.get(q).s++;});
+  });
+  const slots=[...lab.values()].map(x=>({l:x.n,p:x.s/Math.max(x.p,x.s,1)*100,c:x.s,d:Math.max(x.p,x.s)})).sort((a,b)=>a.p-b.p);
+
+  let h=`<div class="seg">${[7,30,'all'].map(p=>`<button data-p="${p}" class="${p===period?'on':''}">${p==='all'?'All time':p+' days'}</button>`).join('')}</div>`;
+  if(!S.log.length)return h+`<div class="card mu">No data yet — log a cigarette on the Today tab.</div>`;
+  h+=`<div class="grid">
+   <div class="stat"><b>${avg.toFixed(1)}</b><span>avg / day</span><div style="font-size:12px;margin-top:4px">${delta}</div></div>
+   <div class="stat"><b>${streak}</b><span>day streak ≤ target</span></div>
+   <div class="stat"><b>${days.length?Math.round(within/days.length*100):0}%</b><span>days within target</span></div>
+   <div class="stat"><b>${gaps.length?fmtMin(mean(gaps)):'–'}</b><span>avg gap between</span></div>
+   <div class="stat"><b>${firsts.length?clock(mean(firsts)+off):'–'}</b><span>avg first of day</span></div>
+   <div class="stat"><b>${lasts.length?clock(mean(lasts)+off):'–'}</b><span>avg last of day</span></div>
+   <div class="stat"><b>${best} / ${worst}</b><span>best / worst day</span></div>
+   <div class="stat"><b>${tot?Math.round(unp/tot*100):0}%</b><span>unplanned share</span></div>
+  </div>`;
+  h+=`<h2>Time of day</h2><div class="card">${bars(hrs,hrs.map((_,i)=>i%3===0?i:''))}</div>`;
+  h+=`<h2>Average by weekday</h2><div class="card">${bars(order.map(i=>wdA[i]),wl)}</div>`;
+  h+=`<h2>Smoked when planned (% of days)</h2><div class="card">`+slots.map(s=>`<div class="hb"><span class="n">${esc(s.l)}</span><span class="b"><i style="width:${s.p}%"></i></span><span class="v">${s.c}/${s.d}</span></div>`).join('')+`</div><div class="note">Lowest percentages are the cigarettes you already skip most — the easiest ones to drop for good.</div>`;
+  return h;
+}
+
+let planOff=0;
+function viewPlan(){
+  const key=addDays(dk(Date.now()),planOff),L=labelsFor(key),custom=!!S.plans[key],d=keyDate(key);
+  const nm=planOff===0?'Today':planOff===1?'Tomorrow':d.toLocaleDateString([],{weekday:'long'});
+  let h=`<div class="hero" style="align-items:center;margin-bottom:12px"><button class="btn" style="width:56px;margin:0" data-poff="-1" ${planOff<=0?'disabled':''}>‹</button>
+   <div style="text-align:center"><b style="font-size:20px">${nm}</b><div class="mu">${d.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'})} · ${custom?'custom plan':'template: '+esc(tplFor(key).name)}</div></div>
+   <button class="btn" style="width:56px;margin:0" data-poff="1" ${planOff>=7?'disabled':''}>›</button></div>`;
+  h+=`<div class="card">`+L.map((l,i)=>`<input type="text" data-pl="${i}" value="${esc(l)}" maxlength="30" placeholder="Slot ${i+1} (empty = skip)">`).join('')+`</div>
+  <div class="note">Leave a slot empty to skip it on this day. Past entries keep the label they were logged with.</div>
+  <h2>Templates</h2><div class="card">
+   <label class="f">Template<select id="ptpl">${S.templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label>
+   <button class="btn" id="papply">Apply to this day</button>
+   <button class="btn" id="psave">Save this day as a new template</button>
+   ${custom?`<button class="btn" id="preset">Reset to weekday template</button>`:''}</div>
+  <button class="btn" data-t="plans">Manage templates & weekly schedule</button><button class="btn" data-t="today">Done</button>`;
+  return h;
+}
+
+const DAYORD=[1,2,3,4,5,6,0];
+function viewPlans(){
+  const todayDow=keyDate(dk(Date.now())).getDay();
+  const used=id=>DAYORD.filter(i=>(S.wd[i]||S.defTpl)===id).map(i=>WD[i]).join(' · ')||'not used';
+  let h=`<h2>Weekly schedule</h2><div class="card">`+
+    DAYORD.map(i=>{const cur=S.wd[i]||S.defTpl;return `<label class="f" style="${i===todayDow?'color:var(--ok);font-weight:700':''}"><span>${WD[i]}${i===todayDow?' · today':''}</span><select data-wd="${i}" style="width:170px">${S.templates.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${esc(t.name)}</option>`).join('')}</select></label>`;}).join('')+
+    `</div><div class="note">Each day starts from its weekday's template. To change just one day, use Plan on the Today tab.</div>`;
+  if(S.templates.length<2)h+=`<button class="btn" id="wkend">⚡ Quick setup: Weekday + Weekend templates</button><div class="note">Creates a Weekend template (a copy you can edit) and assigns it to Saturday and Sunday.</div>`;
+  h+=`<h2>Templates</h2>`;
+  S.templates.forEach(t=>{
+    const chips=t.labels.filter(l=>l.trim());
+    h+=`<div class="card"><input type="text" data-tn="${t.id}" value="${esc(t.name)}" maxlength="24" style="font-weight:700;font-size:18px" placeholder="Template name">
+    <div class="mu">${chips.length} slots · ${used(t.id)}</div>
+    <div style="margin:8px 0">${chips.map(l=>`<span class="chip">${esc(l)}</span>`).join('')||'<span class="mu">No slots</span>'}</div>
+    <details><summary><span>Edit slots</span><span class="mu">›</span></summary>`+
+    t.labels.map((l,i)=>`<input type="text" data-tl="${t.id}|${i}" value="${esc(l)}" maxlength="30" placeholder="Slot ${i+1} (empty = skip)">`).join('')+
+    `</details><div style="display:flex;gap:8px"><button class="btn" data-tdup="${t.id}">Duplicate</button>${S.templates.length>1?`<button class="btn danger" data-tdel="${t.id}">Delete</button>`:''}</div></div>`;
+  });
+  h+=`<button class="btn" id="tnew">+ New template</button><div class="note">Rename a template above, edit its slots under Edit slots. Empty slots are skipped on days that use it.</div>`;
+  return h;
+}
+
+function viewSettings(){
+  return `<h2>Rules</h2><div class="card">
+   <label class="f">Daily target<select id="tgt">${[...Array(10)].map((_,i)=>`<option ${S.target===i+1?'selected':''}>${i+1}</option>`).join('')}</select></label>
+   <label class="f">Day resets at<select id="ds">${[0,1,2,3,4,5,6,7,8].map(i=>`<option value="${i}" ${S.dayStart===i?'selected':''}>${pad(i)}:00</option>`).join('')}</select></label></div>
+  <h2>Backup</h2>
+  <button class="btn" id="bkh">Back up as HTML (app + data)</button>
+  <button class="btn" id="bkj">Back up as JSON</button>
+  <button class="btn" id="rst">Restore from file…</button>
+  <input type="file" id="file" accept=".html,.json,application/json,text/html" hidden>
+  <div class="note">Your data lives in this app's storage on the phone. The HTML backup is a full copy of this app with your data embedded in it — save it to Files/iCloud, and opening it on any host restores everything. Back up weekly; deleting the Home Screen icon can wipe the data.</div>
+  <button class="btn danger" id="wipe">Erase all data</button>`;
+}
+
+/* ---------- render ---------- */
+const TABS=[['today','●','Today'],['history','▤','History'],['stats','◔','Stats'],['plans','▦','Plans'],['settings','⚙','Settings']];
+function render(){
+  const y=window.scrollY;
+  $('#app').innerHTML=({today:viewToday,history:viewHistory,stats:viewStats,settings:viewSettings,plan:viewPlan,plans:viewPlans})[tab]();
+  $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button data-t="${k}" class="${k===tab||(tab==='plan'&&k==='today')?'on':''}"><b>${i}</b>${l}</button>`).join('');
+  tick();window.scrollTo(0,y);
+}
+function tick(){
+  const el=$('#since');if(!el)return;
+  if(!S.log.length){el.textContent='';return;}
+  const last=Math.max(...S.log.map(e=>e.t));
+  el.textContent='Last: '+fmtMin((Date.now()-last)/6e4)+' ago';
+}
+setInterval(()=>{tick();},30000);
+
+/* ---------- events ---------- */
+let drag=null;
+document.addEventListener('pointerdown',e=>{
+  const th=e.target.closest('.thumb');if(!th)return;
+  const tr=th.parentElement;
+  drag={th,tr,x0:e.clientX,dx:0,max:tr.clientWidth-th.offsetWidth-8,i:+tr.dataset.i};
+  th.setPointerCapture(e.pointerId);th.style.transition='none';
+});
+document.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  drag.dx=Math.max(0,Math.min(drag.max,e.clientX-drag.x0));
+  drag.th.style.transform=`translateX(${drag.dx}px)`;
+  drag.tr.style.setProperty('--p',drag.dx/drag.max);
+});
+function endDrag(){
+  if(!drag)return;const d=drag;drag=null;
+  if(d.dx>=d.max*.85){try{navigator.vibrate&&navigator.vibrate(20);}catch(e){}addEntry(d.i);}
+  else{d.th.style.transition='transform .2s';d.th.style.transform='';d.tr.style.setProperty('--p',0);}
+}
+document.addEventListener('pointerup',endDrag);
+document.addEventListener('pointercancel',endDrag);
+
+const planKey=()=>addDays(dk(Date.now()),planOff);
+function newTpl(name,labels){const t={id:'t'+uid(),name,labels:labels.slice()};S.templates.push(t);return t;}
+document.addEventListener('click',e=>{
+  const T=e.target;
+  const t=T.closest('[data-t]');if(t){tab=t.dataset.t;render();window.scrollTo(0,0);return;}
+  const p=T.closest('[data-p]');if(p){period=p.dataset.p==='all'?'all':+p.dataset.p;render();return;}
+  const pl=T.closest('[data-plan]');if(pl){planOff=+pl.dataset.plan;tab='plan';render();window.scrollTo(0,0);return;}
+  const po=T.closest('[data-poff]');if(po){planOff=Math.max(0,Math.min(7,planOff+ +po.dataset.poff));render();return;}
+  const u=T.closest('[data-undo]');if(u){if(confirm('Remove this entry?'))removeEntry(u.dataset.undo);return;}
+  const dup=T.closest('[data-tdup]');if(dup){const x=S.templates.find(z=>z.id===dup.dataset.tdup);newTpl(x.name+' copy',x.labels);save();render();return;}
+  const del=T.closest('[data-tdel]');if(del){
+    const id=del.dataset.tdel;
+    if(S.templates.length>1&&confirm('Delete this template? Days already planned keep their labels.')){
+      S.templates=S.templates.filter(z=>z.id!==id);
+      if(S.defTpl===id)S.defTpl=S.templates[0].id;
+      S.wd=S.wd.map(w=>w===id?null:w);save();render();
+    }return;}
+  switch(T.id){
+    case 'unp':addEntry(-1);return;
+    case 'bkh':return backupHtml();
+    case 'bkj':return backupJson();
+    case 'rst':$('#file').click();return;
+    case 'wkend':{const d=S.templates.find(z=>z.id===S.defTpl);if(d.name==='Default')d.name='Weekday';const w=newTpl('Weekend',d.labels);S.wd[6]=w.id;S.wd[0]=w.id;save();render();return;}
+    case 'tnew':newTpl('New template',S.templates.find(z=>z.id===S.defTpl).labels);save();render();return;
+    case 'papply':{const x=S.templates.find(z=>z.id===$('#ptpl').value);if(x){S.plans[planKey()]=x.labels.slice();save();render();}return;}
+    case 'psave':{const n=prompt('Template name?');if(n&&n.trim()){newTpl(n.trim().slice(0,24),labelsFor(planKey()));save();alert('Saved. Find it under Settings → Templates.');}return;}
+    case 'preset':delete S.plans[planKey()];save();render();return;
+    case 'wipe':if(confirm('Erase ALL data? This cannot be undone.')&&confirm('Really erase everything?')){S=norm({});save();render();}return;
+  }
+});
+document.addEventListener('input',e=>{
+  const d=e.target.dataset||{};
+  if(d.pl!==undefined){const k=planKey();if(!S.plans[k])S.plans[k]=labelsFor(k);S.plans[k][+d.pl]=e.target.value;save();}
+  else if(d.tl!==undefined){const [id,i]=d.tl.split('|');const x=S.templates.find(z=>z.id===id);if(x){x.labels[+i]=e.target.value;save();}}
+  else if(d.tn!==undefined){const x=S.templates.find(z=>z.id===d.tn);if(x){x.name=e.target.value||'Template';save();}}
+});
+document.addEventListener('change',e=>{
+  const T=e.target,d=T.dataset||{};
+  if(T.id==='tgt'){S.target=+T.value;save();}
+  if(T.id==='ds'){S.dayStart=+T.value;save();}
+  if(T.id==='deftpl'){S.defTpl=T.value;save();}
+  if(d.wd!==undefined){S.wd[+d.wd]=T.value||null;save();}
+  if(T.id==='file'&&T.files[0])restore(T.files[0]);
+});
+
+/* ---------- backup / restore ---------- */
+async function out(blob,name){
+  const f=new File([blob],name,{type:blob.type});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}}catch(e){if(e&&e.name==='AbortError')return;}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+const stamp=()=>fmtKey(new Date());
+function backupJson(){out(new Blob([JSON.stringify(S)],{type:'application/json'}),'smokelog-'+stamp()+'.json');}
+async function backupHtml(){
+  let src;
+  try{const r=await fetch(location.pathname,{cache:'no-store'});if(!r.ok)throw 0;src=await r.text();}
+  catch(e){alert('Could not read the app file here — saving a JSON backup instead.');return backupJson();}
+  const data=JSON.stringify(S).replace(/</g,'\\u003c');
+  src=src.replace(/(<script id="seed" type="application\/json">)[\s\S]*?(<\/script>)/,(m,a,b)=>a+data+b);
+  out(new Blob([src],{type:'text/html'}),'smokelog-'+stamp()+'.html');
+}
+async function restore(file){
+  try{
+    const txt=await file.text();let obj;
+    if(txt.trim().startsWith('{'))obj=JSON.parse(txt);
+    else{const m=txt.match(/<script id="seed" type="application\/json">([\s\S]*?)<\/script>/);obj=m&&JSON.parse(m[1].trim());}
+    if(!obj||!Array.isArray(obj.log))throw 0;
+    const n=norm(obj);
+    if(!confirm('Replace current data with '+n.log.length+' entries from this backup?'))return;
+    S=n;save();render();
+  }catch(e){alert('That file does not look like a SmokeLog backup.');}
+  $('#file').value='';
+}
+
+/* ---------- icon + offline ---------- */
+(function(){
+  const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d');
+  x.fillStyle='#0e0f12';x.fillRect(0,0,180,180);
+  x.strokeStyle='#5ee0a0';x.lineWidth=14;x.beginPath();x.arc(90,90,56,0,Math.PI*2);x.stroke();
+  x.fillStyle='#eceef2';x.font='700 56px -apple-system,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('10',90,94);
+  $('#icon').href=c.toDataURL('image/png');
+})();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+render();
+</script>
+</body>
+</html>
